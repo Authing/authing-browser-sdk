@@ -1,11 +1,13 @@
 import axios from 'axios';
 import {
   DEFAULT_IFRAME_HEIGHT,
-  DEFAULT_IFRAME_TIMEOUT,
+  DEFAULT_IFRAME_LOGINSTATE_TIMEOUT,
   DEFAULT_IFRAME_WIDTH,
   DEFAULT_POPUP_HEIGHT,
   DEFAULT_POPUP_WIDTH,
   DEFAULT_SCOPE,
+  MSG_CROSS_ORIGIN_ISOLATED,
+  MSG_PENDING_AUTHZ,
 } from './constants';
 import {
   AuthingSPAInitOptions,
@@ -24,7 +26,7 @@ import { StorageProvider } from './storage/interface';
 import { LocalStorageProvider } from './storage/LocalStorageProvider';
 import { NullStorageProvider } from './storage/NullStorageProvider';
 import { SessionStorageProvider } from './storage/SessionStorageProvider';
-import { NullableStrDict } from './types';
+import { MsgListener, NullableStrDict } from './types';
 import {
   createQueryParams,
   createRandomString,
@@ -38,6 +40,8 @@ import {
 } from './utils';
 
 export class AuthingSPA {
+  private globalMsgListener: MsgListener | null | undefined;
+
   private readonly options: Required<AuthingSPAInitOptions>;
   private readonly loginStateProvider: StorageProvider<LoginState>;
   private readonly transactionProvider: StorageProvider<LoginTransaction>;
@@ -113,6 +117,11 @@ export class AuthingSPA {
     }
 
     // 2. 用隐藏 iframe 获取
+    if (this.globalMsgListener !== undefined) {
+      throw new Error(MSG_PENDING_AUTHZ);
+    }
+    this.globalMsgListener = null;
+
     if (window.crossOriginIsolated) {
       // 如果是 crossOriginIsolated 就发不了 postMessage 了
       console.warn('当前页面运行在隔离模式下，无法获取登录态');
@@ -155,7 +164,13 @@ export class AuthingSPA {
       document.body.append(iframe);
     }
 
-    const res = await this.listenToPostMessage(DEFAULT_IFRAME_TIMEOUT);
+    const res = await Promise.race([
+      this.listenToPostMessage(),
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), DEFAULT_IFRAME_LOGINSTATE_TIMEOUT),
+      ),
+    ]);
+    this.clearMessageListener();
     iframe.remove();
 
     if (res === null) {
@@ -352,12 +367,15 @@ export class AuthingSPA {
    */
   async loginWithPopup(
     options: { forced?: boolean } = {},
-  ): Promise<LoginState> {
+  ): Promise<LoginState | null> {
+    if (this.globalMsgListener !== undefined) {
+      throw new Error(MSG_PENDING_AUTHZ);
+    }
+    this.globalMsgListener = null;
+
     if (window.crossOriginIsolated) {
       // 如果是 crossOriginIsolated 就发不了 postMessage 了
-      throw new Error(
-        '当前页面运行在隔离模式下, 无法进行此方式登录, 请使用 loginWithRedirect',
-      );
+      throw new Error(MSG_CROSS_ORIGIN_ISOLATED);
     }
 
     const state = createRandomString(16);
@@ -394,9 +412,23 @@ export class AuthingSPA {
       throw new Error('弹出窗口失败');
     }
 
-    const res = (await this.listenToPostMessage()) as OIDCResponse;
-    if (!win.closed) {
-      win.close();
+    const res = await Promise.race([
+      this.listenToPostMessage(),
+      new Promise<null>((resolve) => {
+        const handle = setInterval(() => {
+          if (win.closed) {
+            clearInterval(handle);
+            // 防止 post message 事件和 close 事件同时到达
+            setTimeout(() => resolve(null), 500);
+          }
+        }, 500);
+      }),
+    ]);
+    this.clearMessageListener();
+
+    if (!res) {
+      // 窗口被用户关闭了
+      return null;
     }
 
     if (res.error) {
@@ -419,17 +451,22 @@ export class AuthingSPA {
   /**
    * 在指定的元素中增加一个 iframe 登录页面，在其中完成登录
    *
+   * 注意: 当手动移除 iframe 时，必须同时调用 clearMessageListener 方法！
+   *
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    */
   async loginWithIframe(
     rootElem: HTMLElement,
     options: { forced?: boolean } = {},
   ): Promise<LoginState> {
+    if (this.globalMsgListener !== undefined) {
+      throw new Error(MSG_PENDING_AUTHZ);
+    }
+    this.globalMsgListener = null;
+
     if (window.crossOriginIsolated) {
       // 如果是 crossOriginIsolated 就发不了 postMessage 了
-      throw new Error(
-        '当前页面运行在隔离模式下, 无法进行此方式登录, 请使用 loginWithRedirect',
-      );
+      throw new Error(MSG_CROSS_ORIGIN_ISOLATED);
     }
 
     const state = createRandomString(16);
@@ -469,6 +506,7 @@ export class AuthingSPA {
     }
 
     const res = (await this.listenToPostMessage()) as OIDCResponse;
+    this.clearMessageListener();
     iframe.remove();
 
     if (res.error) {
@@ -486,6 +524,16 @@ export class AuthingSPA {
       window.location.href,
       codeVerifier,
     );
+  }
+
+  /**
+   * 移除 SDK 注册的 Post Message 监听器
+   */
+  async clearMessageListener() {
+    if (this.globalMsgListener) {
+      window.removeEventListener('message', this.globalMsgListener);
+    }
+    this.globalMsgListener = undefined;
   }
 
   // async logoutWithAjax() { }
@@ -514,52 +562,44 @@ export class AuthingSPA {
 
   // TODO: Access Token, ID Token 验证
 
-  private async listenToPostMessage(timeout?: number) {
-    return Promise.race([
-      new Promise<OIDCResponse>((resolve, reject) => {
-        const msgEventListener: any = window.addEventListener(
-          'message',
-          (msgEvent) => {
-            if (
-              msgEvent.origin !== this.domain ||
-              msgEvent.data?.type !== 'authorization_response'
-            ) {
-              return;
-            }
+  private async listenToPostMessage() {
+    return new Promise<OIDCResponse>((resolve, reject) => {
+      const msgEventListener = (msgEvent: MessageEvent) => {
+        if (
+          msgEvent.origin !== this.domain ||
+          msgEvent.data?.type !== 'authorization_response'
+        ) {
+          return;
+        }
 
-            window.removeEventListener('message', msgEventListener);
-            // iframe.remove();
-            const { response } = msgEvent.data;
+        window.removeEventListener('message', msgEventListener);
+        this.globalMsgListener = undefined;
 
-            if (!response) {
-              reject(new Error('认证服务器无返回结果'));
-            }
+        const { response } = msgEvent.data;
 
-            if (response.error) {
-              return resolve({
-                error: response.error,
-                errorDesc: response.error_description,
-              });
-            }
+        if (!response) {
+          reject(new Error('认证服务器无返回结果'));
+        }
 
-            return resolve({
-              accessToken: response.access_token,
-              idToken: response.id_token,
-              refreshToken: response.refresh_token,
-              code: response.code,
-              state: response.state,
-            });
-          },
-        );
-      }),
-      ...(timeout
-        ? [
-            new Promise<null>((resolve) =>
-              setTimeout(() => resolve(null), timeout),
-            ),
-          ]
-        : []),
-    ]);
+        if (response.error) {
+          return resolve({
+            error: response.error,
+            errorDesc: response.error_description,
+          });
+        }
+
+        return resolve({
+          accessToken: response.access_token,
+          idToken: response.id_token,
+          refreshToken: response.refresh_token,
+          code: response.code,
+          state: response.state,
+        });
+      };
+
+      this.globalMsgListener = msgEventListener;
+      window.addEventListener('message', msgEventListener);
+    });
   }
 
   private async saveLoginState(data: LoginState) {
