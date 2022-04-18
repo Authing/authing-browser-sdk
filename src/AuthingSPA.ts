@@ -165,7 +165,7 @@ export class AuthingSPA {
     }
 
     const res = await Promise.race([
-      this.listenToPostMessage(),
+      this.listenToPostMessage(state),
       new Promise<null>((resolve) =>
         setTimeout(() => resolve(null), DEFAULT_IFRAME_LOGINSTATE_TIMEOUT),
       ),
@@ -413,7 +413,7 @@ export class AuthingSPA {
     }
 
     const res = await Promise.race([
-      this.listenToPostMessage(),
+      this.listenToPostMessage(state),
       new Promise<null>((resolve) => {
         const handle = setInterval(() => {
           if (win.closed) {
@@ -505,8 +505,8 @@ export class AuthingSPA {
       rootElem.append(iframe);
     }
 
-    const res = (await this.listenToPostMessage()) as OIDCResponse;
-    this.clearMessageListener();
+    const res = await this.listenToPostMessage(state);
+    // this.clearMessageListener();
     iframe.remove();
 
     if (res.error) {
@@ -529,7 +529,7 @@ export class AuthingSPA {
   /**
    * 移除 SDK 注册的 Post Message 监听器
    */
-  async clearMessageListener() {
+  clearMessageListener() {
     if (this.globalMsgListener) {
       window.removeEventListener('message', this.globalMsgListener);
     }
@@ -562,7 +562,7 @@ export class AuthingSPA {
 
   // TODO: Access Token, ID Token 验证
 
-  private async listenToPostMessage() {
+  private async listenToPostMessage(state: string) {
     return new Promise<OIDCResponse>((resolve, reject) => {
       const msgEventListener = (msgEvent: MessageEvent) => {
         if (
@@ -576,9 +576,8 @@ export class AuthingSPA {
         this.globalMsgListener = undefined;
 
         const { response } = msgEvent.data;
-
-        if (!response) {
-          reject(new Error('认证服务器无返回结果'));
+        if (!response || response.state !== state) {
+          return reject(new Error('非法的服务端返回值'));
         }
 
         if (response.error) {
