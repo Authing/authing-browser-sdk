@@ -1,0 +1,1 @@
+export { AuthingSPA } from './AuthingSPA';
