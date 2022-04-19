@@ -66,6 +66,12 @@ export interface AuthzURLParams extends NullableStrDict {
   code_challenge_method?: 'S256';
 }
 
+export interface LogoutURLParams extends NullableStrDict {
+  post_logout_redirect_uri?: string;
+  id_token_hint?: string;
+  state?: string;
+}
+
 export interface PKCETokenParams extends NullableStrDict {
   grant_type: 'authorization_code';
   client_id: string;

@@ -20,6 +20,7 @@ import {
   PKCETokenParams,
   OIDCTokenResponse,
   LoginStateWithCustomStateData,
+  LogoutURLParams,
 } from './global';
 import { InMemoryStorageProvider } from './storage/InMemoryStorgeProvider';
 import { StorageProvider } from './storage/interface';
@@ -117,6 +118,9 @@ export class AuthingSPA {
       }
     }
 
+    // 清掉旧的登录态
+    await this.loginStateProvider.delete(loginStateKey(this.options.appId));
+
     // 2. 用隐藏 iframe 获取
     if (this.globalMsgListener !== undefined) {
       throw new Error(MSG_PENDING_AUTHZ);
@@ -207,7 +211,7 @@ export class AuthingSPA {
   }
 
   /**
-   * 将用户重定向到认证端点进行登录，需要配合 handleRedirectCallback 使用
+   * 将用户重定向到 Authing 认证端点进行登录，需要配合 handleRedirectCallback 使用
    *
    * @param options.redirectUri 接受登录结果的 URL，默认为当前 URL
    * @param options.originalUri 发起登录的 URL，若设置了 redirectToOriginalUri 会在登录结束后重定向回到此页面，默认为当前 URL
@@ -266,7 +270,7 @@ export class AuthingSPA {
   }
 
   /**
-   * 判断当前 URL 是否为 OIDC 回调 URL
+   * 判断当前 URL 是否为 Authing 登录回调 URL
    */
   isRedirectCallback(): boolean {
     const params = this.resolveCallbackParams();
@@ -370,7 +374,7 @@ export class AuthingSPA {
   }
 
   /**
-   * 弹出一个新的登录页面窗口，在其中完成登录
+   * 弹出一个新的 Authing 登录页面窗口，在其中完成登录
    *
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    */
@@ -461,7 +465,7 @@ export class AuthingSPA {
   }
 
   /**
-   * 在指定的 iframe 中显示登录页面，在其中完成登录
+   * 在指定的 iframe 中显示 Authing 登录页面，在其中完成登录
    *
    * 注意: 当需要手动关闭 iframe 时，必须同时调用 abortIframeLogin 方法
    *
@@ -528,38 +532,47 @@ export class AuthingSPA {
   /**
    * 手动中止 iframe 登录, 并移除 SDK 注册的事件监听器
    */
-  abortIframeLogin() {
+  abortIframeLogin(): void {
     if (this.globalMsgListener) {
       window.removeEventListener('message', this.globalMsgListener);
     }
     this.globalMsgListener = undefined;
   }
 
-  // async logoutWithAjax() { }
-
-  // async logoutWithHiddenIframe(options: {
-  //   timeout?: number;
-  // }) { }
-
-  // async logoutWithRedirect(options: { redirectUri?: string }) {}
-
   /**
-   * 解析 ID Token 中的用户信息
-   * @param idToken
+   * 重定向到 Authing 的登出端点，完成登出操作
+   *
+   * @param options.redirectUri 登出完成后的回调地址，若为 null 则不进行回调
+   * @param options.state 自定义中间状态
    */
-  async parseIdToken(_idToken: string): Promise<IDToken> {
-    throw new Error('not impled');
-  }
+  async logoutWithRedirect(
+    options: {
+      redirectUri?: string | null;
+      state?: string;
+    } = {},
+  ): Promise<boolean> {
+    const loginState = await this.getLoginState();
+    if (!loginState) {
+      return false;
+    }
 
-  /**
-   * 解析 ID Token 中的用户信息
-   * @param accessToken
-   */
-  async parseAccessToken(_accessToken: string): Promise<AccessToken> {
-    throw new Error('not impled');
-  }
+    const params: LogoutURLParams = {
+      id_token_hint: loginState.idToken,
+    };
 
-  // TODO: Access Token, ID Token 验证
+    if (options.redirectUri !== null) {
+      params.post_logout_redirect_uri =
+        options.redirectUri ?? window.location.href;
+      params.state = options.state;
+    }
+
+    await this.loginStateProvider.delete(loginStateKey(this.options.appId));
+
+    window.location.replace(
+      `${this.domain}/oidc/session/end?${createQueryParams(params)}`,
+    );
+    return true;
+  }
 
   private async listenToPostMessage(state: string) {
     return new Promise<OIDCResponse>((resolve, reject) => {
