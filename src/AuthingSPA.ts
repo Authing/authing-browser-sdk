@@ -170,7 +170,12 @@ export class AuthingSPA {
         setTimeout(() => resolve(null), DEFAULT_IFRAME_LOGINSTATE_TIMEOUT),
       ),
     ]);
-    this.clearMessageListener();
+
+    if (this.globalMsgListener) {
+      window.removeEventListener('message', this.globalMsgListener);
+    }
+    this.globalMsgListener = undefined;
+
     iframe.remove();
 
     if (res === null) {
@@ -424,7 +429,10 @@ export class AuthingSPA {
         }, 500);
       }),
     ]);
-    this.clearMessageListener();
+    if (this.globalMsgListener) {
+      window.removeEventListener('message', this.globalMsgListener);
+    }
+    this.globalMsgListener = undefined;
 
     if (!res) {
       // 窗口被用户关闭了
@@ -449,14 +457,14 @@ export class AuthingSPA {
   }
 
   /**
-   * 在指定的元素中增加一个 iframe 登录页面，在其中完成登录
+   * 在指定的 iframe 中显示登录页面，在其中完成登录
    *
-   * 注意: 当手动移除 iframe 时，必须同时调用 clearMessageListener 方法！
+   * 注意: 当需要手动关闭 iframe 时，必须同时调用 abortIframeLogin 方法
    *
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    */
   async loginWithIframe(
-    rootElem: HTMLElement,
+    iframe: HTMLIFrameElement,
     options: { forced?: boolean } = {},
   ): Promise<LoginState> {
     if (this.globalMsgListener !== undefined) {
@@ -493,22 +501,9 @@ export class AuthingSPA {
       params.code_challenge_method = 'S256';
     }
 
-    const iframe = document.createElement('iframe');
-    // iframe.title = 'postMessage() Initiator';
-    iframe.width = this.options.iframeWidth.toString();
-    iframe.height = this.options.iframeHeight.toString();
-
     iframe.src = `${this.domain}/oidc/auth?${createQueryParams(params)}`;
-    if (isIE()) {
-      rootElem.appendChild(iframe);
-    } else {
-      rootElem.append(iframe);
-    }
 
     const res = await this.listenToPostMessage(state);
-    // this.clearMessageListener();
-    iframe.remove();
-
     if (res.error) {
       throw new Error(
         `登录失败，认证服务器返回错误: error=${res.error}, error_description=${res.errorDesc}`,
@@ -527,9 +522,9 @@ export class AuthingSPA {
   }
 
   /**
-   * 移除 SDK 注册的 Post Message 监听器
+   * 手动中止 iframe 登录, 并移除 SDK 注册的事件监听器
    */
-  clearMessageListener() {
+  abortIframeLogin() {
     if (this.globalMsgListener) {
       window.removeEventListener('message', this.globalMsgListener);
     }
