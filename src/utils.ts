@@ -78,6 +78,25 @@ export function domainC14n(domain: string) {
   throw Error(`无效的域名配置: ${domain}`);
 }
 
+export function parseToken(token: string) {
+  const [header, body, sig] = token.split('.');
+  if (!sig) {
+    throw new Error('无效的 Token 格式');
+  }
+
+  const headerObj = JSON.parse(window.atob(header));
+  if (headerObj.enc) {
+    throw new Error(
+      '本 SDK 目前不支持处理加密 Token, 请在应用配置中关闭「ID Token 加密」功能',
+    );
+  }
+
+  return {
+    header: headerObj,
+    body: JSON.parse(window.atob(body)),
+  };
+}
+
 export function isIE() {
   if (
     window.navigator.userAgent.indexOf('MSIE') >= 1 ||

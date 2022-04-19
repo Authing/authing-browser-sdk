@@ -36,6 +36,7 @@ import {
   getCryptoSubtle,
   isIE,
   loginStateKey,
+  parseToken,
   transactionKey,
 } from './utils';
 
@@ -108,10 +109,10 @@ export class AuthingSPA {
   ): Promise<null | LoginState> {
     // 1. 从 loginStateProvider 中（默认为 localStorage）获取
     if (!options.ignoreCache) {
-      const state = this.loginStateProvider.get(
+      const state = await this.loginStateProvider.get(
         loginStateKey(this.options.appId),
       );
-      if (state) {
+      if (state && state.expireAt && state.expireAt > Date.now()) {
         return state;
       }
     }
@@ -355,7 +356,6 @@ export class AuthingSPA {
     const result = await this.saveLoginState({
       idToken,
       accessToken,
-      timestamp: Date.now(),
     });
 
     if (this.options.redirectToOriginalUri && originalUri) {
@@ -596,9 +596,34 @@ export class AuthingSPA {
     });
   }
 
-  private async saveLoginState(data: LoginState) {
-    await this.loginStateProvider.put(loginStateKey(this.options.appId), data);
-    return data;
+  private async saveLoginState(params: {
+    accessToken?: string;
+    idToken?: string;
+  }) {
+    const { accessToken, idToken } = params;
+    const loginState: LoginState = {
+      accessToken: accessToken,
+      idToken: idToken,
+      timestamp: Date.now(),
+    };
+
+    if (idToken) {
+      const parsedIdToken: IDToken = parseToken(idToken).body;
+      loginState.parsedIdToken = parsedIdToken;
+      loginState.expireAt = parsedIdToken.exp * 1000;
+    }
+
+    if (accessToken) {
+      const parsedAccessToken: AccessToken = parseToken(accessToken).body;
+      loginState.parsedAccessToken = parsedAccessToken;
+      loginState.expireAt = parsedAccessToken.exp * 1000;
+    }
+
+    await this.loginStateProvider.put(
+      loginStateKey(this.options.appId),
+      loginState,
+    );
+    return loginState;
   }
 
   private async exchangeToken(
@@ -625,9 +650,8 @@ export class AuthingSPA {
     )) as { data: OIDCTokenResponse };
 
     return this.saveLoginState({
-      accessToken: tokenRes.access_token,
       idToken: tokenRes.id_token,
-      timestamp: Date.now(),
+      accessToken: tokenRes.access_token,
     });
   }
 
@@ -651,7 +675,6 @@ export class AuthingSPA {
       return this.saveLoginState({
         accessToken: res.accessToken,
         idToken: res.idToken,
-        timestamp: Date.now(),
       });
     }
 

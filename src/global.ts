@@ -35,6 +35,9 @@ export interface AuthingSPAInitOptions {
 export interface LoginState {
   accessToken?: string;
   idToken?: string;
+  parsedIdToken?: IDToken;
+  parsedAccessToken?: AccessToken;
+  expireAt?: number;
   timestamp: number;
 }
 
@@ -86,4 +89,39 @@ export interface OIDCResponse {
   error?: string;
   errorDesc?: string;
   state?: string;
+}
+
+export interface IDToken extends Record<string, any> {
+  // Token 字段
+  sub: string;
+  aud: string;
+  exp: number;
+  iat: number;
+  iss: string;
+  nonce: string;
+  at_hash: string;
+  s_hash: string;
+
+  // 用户信息字段
+  name: string;
+  nickname: string;
+  given_name: string;
+  family_name: string;
+  birthdate: string;
+  gender: 'M' | 'F' | 'U';
+  picture: string;
+  updated_at: string;
+  zoneinfo: string;
+  preferred_username: string;
+  locale: string;
+}
+
+export interface AccessToken {
+  jti: string;
+  sub: string;
+  iat: number;
+  exp: number;
+  scope: string;
+  iss: string;
+  aud: string;
 }
