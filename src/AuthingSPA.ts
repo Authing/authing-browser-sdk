@@ -465,12 +465,15 @@ export class AuthingSPA {
   }
 
   /**
+   * 由于 iframe 存在跨域 cookie 无法携带以及联邦认证支持问题，暂时不支持本方法
+   *
    * 在指定的 iframe 中显示 Authing 登录页面，在其中完成登录
    *
    * 注意: 当需要手动关闭 iframe 时，必须同时调用 abortIframeLogin 方法
    *
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    */
+  /*
   async loginWithIframe(
     iframe: HTMLIFrameElement,
     options: { forced?: boolean } = {},
@@ -528,16 +531,19 @@ export class AuthingSPA {
       codeVerifier,
     );
   }
+  */
 
   /**
    * 手动中止 iframe 登录, 并移除 SDK 注册的事件监听器
    */
+  /*
   abortIframeLogin(): void {
     if (this.globalMsgListener) {
       window.removeEventListener('message', this.globalMsgListener);
     }
     this.globalMsgListener = undefined;
   }
+  */
 
   /**
    * 重定向到 Authing 的登出端点，完成登出操作
