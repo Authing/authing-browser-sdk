@@ -551,7 +551,7 @@ export class AuthingSPA {
       state?: string;
     } = {},
   ): Promise<boolean> {
-    const loginState = await this.getLoginState();
+    const loginState = await this.getLoginState({ ignoreCache: true });
     if (!loginState) {
       return false;
     }
