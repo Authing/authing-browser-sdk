@@ -209,12 +209,14 @@ export class AuthingSPA {
   /**
    * 将用户重定向到认证端点进行登录，需要配合 handleRedirectCallback 使用
    *
-   * @param options.originalUri 发起登录的 URL，会在登录结束后重定向回到此页面，默认为当前 URL
+   * @param options.redirectUri 接受登录结果的 URL，默认为当前 URL
+   * @param options.originalUri 发起登录的 URL，若设置了 redirectToOriginalUri 会在登录结束后重定向回到此页面，默认为当前 URL
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    * @param options.customState 自定义的中间状态，会被传递到回调端点
    */
   async loginWithRedirect(
     options: {
+      redirectUri?: string;
       originalUri?: string;
       forced?: boolean;
       customState?: any;
@@ -223,8 +225,9 @@ export class AuthingSPA {
     const state = createRandomString(16);
     const nonce = createRandomString(16);
 
+    const redirectUri = options.redirectUri || window.location.href;
     const params: AuthzURLParams = {
-      redirect_uri: this.options.redirectUri,
+      redirect_uri: redirectUri,
       response_mode: this.options.redirectResponseMode,
       response_type: this.options.useImplicitMode
         ? this.options.implicitResponseType
@@ -249,6 +252,7 @@ export class AuthingSPA {
       {
         codeVerifier,
         state,
+        redirectUri,
         ...(this.options.redirectToOriginalUri && {
           originalUri: options.originalUri ?? window.location.href,
         }),
@@ -326,7 +330,7 @@ export class AuthingSPA {
         }
         const res = await this.exchangeToken(
           code,
-          this.options.redirectUri,
+          tx.redirectUri,
           tx.codeVerifier as string,
         );
 

@@ -17,7 +17,7 @@ export interface AccessToken {
 export interface AuthingSPAInitOptions {
   domain: string; // 必须填用户池域名！
   appId: string;
-  redirectUri: string;
+  // redirectUri: string;
   scope?: string;
   redirectToOriginalUri?: boolean;
   // idpPublicKey?: string;
@@ -48,6 +48,7 @@ export interface LoginStateWithCustomStateData extends LoginState {
 export interface LoginTransaction {
   codeVerifier?: string;
   state: string;
+  redirectUri: string;
   originalUri?: string;
   customState?: any;
 }
