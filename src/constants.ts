@@ -8,9 +8,6 @@ export const DEFAULT_IFRAME_LOGINSTATE_TIMEOUT = 5000;
 export const DEFAULT_POPUP_WIDTH = 800;
 export const DEFAULT_POPUP_HEIGHT = 600;
 
-export const DEFAULT_IFRAME_WIDTH = 600;
-export const DEFAULT_IFRAME_HEIGHT = 800;
-
 export const DEFAULT_SCOPE = 'openid profile';
 
 export const MSG_PENDING_AUTHZ =

@@ -1,8 +1,6 @@
 import axios from 'axios';
 import {
-  DEFAULT_IFRAME_HEIGHT,
   DEFAULT_IFRAME_LOGINSTATE_TIMEOUT,
-  DEFAULT_IFRAME_WIDTH,
   DEFAULT_POPUP_HEIGHT,
   DEFAULT_POPUP_WIDTH,
   DEFAULT_SCOPE,
@@ -65,9 +63,10 @@ export class AuthingSPA {
     if (typeof localStorage === 'object') {
       this.loginStateProvider = new LocalStorageProvider();
     } else {
-      console.warn(
-        '您的浏览器版本过低，登录态存储功能将不可用，请实现自定义 loginStateStorageProvider',
-      );
+      // console.warn(
+      //   '您的浏览器版本过低，登录态存储功能将不可用，请实现自定义 loginStateStorageProvider',
+      // );
+      console.warn('您的浏览器版本过低，登录态存储功能将不可用');
       this.loginStateProvider = new InMemoryStorageProvider();
     }
 
@@ -79,8 +78,11 @@ export class AuthingSPA {
     } else {
       if (!options.useImplicitMode) {
         console.warn(
-          '您的浏览器版本过低，重定向认证功能将不可用，请实现自定义 transactionStorageProvider 或设置 useImplicitMode 为 true',
+          '您的浏览器版本过低，PKCE 重定向认证功能将不可用，请设置 useImplicitMode 为 true',
         );
+        // console.warn(
+        //   '您的浏览器版本过低，PKCE 重定向认证功能将不可用，请实现自定义 transactionStorageProvider 或设置 useImplicitMode 为 true',
+        // );
       }
       this.transactionProvider = new NullStorageProvider();
     }
@@ -90,8 +92,6 @@ export class AuthingSPA {
     options.redirectResponseMode = options.redirectResponseMode ?? 'fragment';
     options.popupWidth = options.popupWidth ?? DEFAULT_POPUP_WIDTH;
     options.popupHeight = options.popupHeight ?? DEFAULT_POPUP_HEIGHT;
-    options.iframeWidth = options.iframeWidth ?? DEFAULT_IFRAME_WIDTH;
-    options.iframeHeight = options.iframeHeight ?? DEFAULT_IFRAME_HEIGHT;
     options.scope = options.scope ?? DEFAULT_SCOPE;
   }
 

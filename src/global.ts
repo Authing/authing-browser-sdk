@@ -28,8 +28,6 @@ export interface AuthingSPAInitOptions {
   // loginStateStorageProvider?: StorageProvider<LoginState>;
   popupWidth?: number;
   popupHeight?: number;
-  iframeWidth?: number;
-  iframeHeight?: number;
 }
 
 export interface LoginState {
