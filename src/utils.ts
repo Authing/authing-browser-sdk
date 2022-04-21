@@ -1,7 +1,7 @@
 import { STORAGE_KEY_PREFIX } from './constants';
-import { NullableStrDict, StrDict } from './types';
+import { StrDict } from './types';
 
-export function createQueryParams(params: NullableStrDict) {
+export function createQueryParams(params: any) {
   return Object.keys(params)
     .filter((k) => params[k] !== null && params[k] !== undefined)
     .map(

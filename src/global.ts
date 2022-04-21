@@ -1,9 +1,5 @@
 // import { StorageProvider } from './storage/interface';
-import {
-  ImplicitResponseType,
-  NullableStrDict,
-  RedirectResponseMode,
-} from './types';
+import { ImplicitResponseType, RedirectResponseMode } from './types';
 
 export interface IDToken {
   sub: string;
@@ -51,7 +47,7 @@ export interface LoginTransaction {
   customState?: any;
 }
 
-export interface AuthzURLParams extends NullableStrDict {
+export interface AuthzURLParams {
   redirect_uri: string;
   response_type: string;
   response_mode: string;
@@ -64,13 +60,13 @@ export interface AuthzURLParams extends NullableStrDict {
   code_challenge_method?: 'S256';
 }
 
-export interface LogoutURLParams extends NullableStrDict {
+export interface LogoutURLParams {
   post_logout_redirect_uri?: string;
   id_token_hint?: string;
   state?: string;
 }
 
-export interface PKCETokenParams extends NullableStrDict {
+export interface PKCETokenParams {
   grant_type: 'authorization_code';
   client_id: string;
   code: string;

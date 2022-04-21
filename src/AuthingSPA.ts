@@ -25,7 +25,7 @@ import { StorageProvider } from './storage/interface';
 import { LocalStorageProvider } from './storage/LocalStorageProvider';
 import { NullStorageProvider } from './storage/NullStorageProvider';
 import { SessionStorageProvider } from './storage/SessionStorageProvider';
-import { MsgListener, NullableStrDict } from './types';
+import { MsgListener, StrDict } from './types';
 import {
   createQueryParams,
   createRandomString,
@@ -723,7 +723,7 @@ export class AuthingSPA {
       return null;
     }
 
-    const paramDict: NullableStrDict = Object.create(null);
+    const paramDict: StrDict = Object.create(null);
     paramSource
       .substring(1)
       .split('&')
