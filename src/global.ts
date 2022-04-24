@@ -42,6 +42,7 @@ export interface LoginStateWithCustomStateData extends LoginState {
 export interface LoginTransaction {
   codeVerifier?: string;
   state: string;
+  nonce: string;
   redirectUri: string;
   originalUri?: string;
   customState?: any;
@@ -82,7 +83,7 @@ export interface OIDCTokenResponse {
   token_type: string;
 }
 
-export interface OIDCResponse {
+export interface OIDCWebMessageResponse {
   code?: string;
   accessToken?: string;
   idToken?: string;

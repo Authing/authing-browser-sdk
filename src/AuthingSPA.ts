@@ -14,7 +14,7 @@ import {
   AccessToken,
   LoginTransaction,
   AuthzURLParams,
-  OIDCResponse,
+  OIDCWebMessageResponse,
   PKCETokenParams,
   OIDCTokenResponse,
   LoginStateWithCustomStateData,
@@ -204,8 +204,9 @@ export class AuthingSPA {
       throw new Error('state 验证失败');
     }
 
-    return this.handleSuccessfulOIDCResponse(
+    return this.handleOIDCWebMsgResponse(
       res,
+      nonce,
       window.location.href,
       codeVerifier,
     );
@@ -258,10 +259,13 @@ export class AuthingSPA {
         codeVerifier,
         state,
         redirectUri,
+        nonce,
         ...(this.options.redirectToOriginalUri && {
           originalUri: options.originalUri ?? window.location.href,
         }),
-        ...(options.customState && { customState: options.customState }),
+        ...(options.customState !== undefined && {
+          customState: options.customState,
+        }),
       },
     );
 
@@ -337,6 +341,7 @@ export class AuthingSPA {
           code,
           tx.redirectUri,
           tx.codeVerifier as string,
+          tx.nonce,
         );
 
         if (this.options.redirectToOriginalUri && originalUri) {
@@ -354,6 +359,7 @@ export class AuthingSPA {
     // implicit flow
     const idToken = paramDict.id_token;
     const accessToken = paramDict.access_token;
+    const nonce = tx?.nonce;
 
     if (
       (this.options.implicitResponseType.includes('token') && !accessToken) ||
@@ -365,6 +371,7 @@ export class AuthingSPA {
     const result = await this.saveLoginState({
       idToken,
       accessToken,
+      nonce,
     });
 
     if (this.options.redirectToOriginalUri && originalUri) {
@@ -458,8 +465,9 @@ export class AuthingSPA {
       throw new Error('state 验证失败');
     }
 
-    return this.handleSuccessfulOIDCResponse(
+    return this.handleOIDCWebMsgResponse(
       res,
+      nonce,
       window.location.href,
       codeVerifier,
     );
@@ -607,7 +615,7 @@ export class AuthingSPA {
   }
 
   private async listenToPostMessage(state: string) {
-    return new Promise<OIDCResponse>((resolve, reject) => {
+    return new Promise<OIDCWebMessageResponse>((resolve, reject) => {
       const msgEventListener = (msgEvent: MessageEvent) => {
         if (
           msgEvent.origin !== this.domain ||
@@ -648,6 +656,7 @@ export class AuthingSPA {
   private async saveLoginState(params: {
     accessToken?: string;
     idToken?: string;
+    nonce?: string;
   }) {
     const { accessToken, idToken } = params;
     const loginState: LoginState = {
@@ -660,6 +669,10 @@ export class AuthingSPA {
       const parsedIdToken: IDToken = parseToken(idToken).body;
       loginState.parsedIdToken = parsedIdToken;
       loginState.expireAt = parsedIdToken.exp * 1000;
+
+      if (params.nonce && parsedIdToken.nonce !== params.nonce) {
+        throw new Error('nonce 验证失败');
+      }
     }
 
     if (accessToken) {
@@ -679,6 +692,7 @@ export class AuthingSPA {
     code: string,
     redirectUri: string,
     codeVerifier: string,
+    nonce: string,
   ) {
     const tokenParam: PKCETokenParams = {
       grant_type: 'authorization_code',
@@ -701,11 +715,13 @@ export class AuthingSPA {
     return this.saveLoginState({
       idToken: tokenRes.id_token,
       accessToken: tokenRes.access_token,
+      nonce,
     });
   }
 
-  private async handleSuccessfulOIDCResponse(
-    res: OIDCResponse,
+  private async handleOIDCWebMsgResponse(
+    res: OIDCWebMessageResponse,
+    nonce: string,
     // 只有 PKCE 会用下面两个参数
     redirectUri?: string,
     codeVerifier?: string,
@@ -724,6 +740,7 @@ export class AuthingSPA {
       return this.saveLoginState({
         accessToken: res.accessToken,
         idToken: res.idToken,
+        nonce,
       });
     }
 
@@ -737,7 +754,7 @@ export class AuthingSPA {
       throw new Error();
     }
 
-    return this.exchangeToken(res.code, redirectUri, codeVerifier);
+    return this.exchangeToken(res.code, redirectUri, codeVerifier, nonce);
   }
 
   private resolveCallbackParams() {
