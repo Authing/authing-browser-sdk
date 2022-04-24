@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { axiosGet, axiosPost } from './axios';
 import {
   DEFAULT_IFRAME_LOGINSTATE_TIMEOUT,
   DEFAULT_POPUP_HEIGHT,
@@ -19,6 +19,7 @@ import {
   OIDCTokenResponse,
   LoginStateWithCustomStateData,
   LogoutURLParams,
+  UserInfo,
 } from './global';
 import { InMemoryStorageProvider } from './storage/InMemoryStorgeProvider';
 import { StorageProvider } from './storage/interface';
@@ -546,6 +547,31 @@ export class AuthingSPA {
   */
 
   /**
+   * 用 Access Token 获取用户身份信息
+   *
+   * @param options.accessToken Access Token，默认从登录态中获取
+   */
+  async getUserInfo(
+    options: {
+      accessToken?: string;
+    } = {},
+  ): Promise<UserInfo> {
+    const accessToken =
+      options.accessToken ?? (await this.getLoginState())?.accessToken;
+    if (!accessToken) {
+      throw new Error('未传入 access token');
+    }
+
+    const { data } = await axiosGet(`${this.domain}/oidc/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return data as UserInfo;
+  }
+
+  /**
    * 重定向到 Authing 的登出端点，完成登出操作
    *
    * @param options.redirectUri 登出完成后的回调地址，若为 null 则不进行回调
@@ -662,7 +688,7 @@ export class AuthingSPA {
       redirect_uri: redirectUri,
     };
 
-    const { data: tokenRes } = (await axios.post(
+    const { data: tokenRes } = (await axiosPost(
       `${this.domain}/oidc/token`,
       createQueryParams(tokenParam),
       {

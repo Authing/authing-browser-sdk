@@ -92,18 +92,8 @@ export interface OIDCResponse {
   state?: string;
 }
 
-export interface IDToken extends Record<string, any> {
-  // Token 字段
+export interface UserInfo extends Record<string, any> {
   sub: string;
-  aud: string;
-  exp: number;
-  iat: number;
-  iss: string;
-  nonce: string;
-  at_hash: string;
-  s_hash: string;
-
-  // 用户信息字段
   name: string;
   nickname: string;
   given_name: string;
@@ -115,6 +105,17 @@ export interface IDToken extends Record<string, any> {
   zoneinfo: string;
   preferred_username: string;
   locale: string;
+}
+
+export interface IDToken extends UserInfo {
+  sub: string;
+  aud: string;
+  exp: number;
+  iat: number;
+  iss: string;
+  nonce: string;
+  at_hash: string;
+  s_hash: string;
 }
 
 export interface AccessToken {
