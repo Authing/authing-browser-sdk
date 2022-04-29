@@ -70,7 +70,8 @@ export async function genPKCEPair(algorithm = 'SHA-256') {
 }
 
 export function domainC14n(domain: string) {
-  const domainExp = /^((?:http)|(?:https):\/\/)?((?:\w+)(?:\.\w+)+)(?:\/.*)?$/;
+  const domainExp =
+    /^((?:http)|(?:https):\/\/)?((?:[\w-_]+)(?:\.[\w-_]+)+)(?:\/.*)?$/;
   const matchRes = domainExp.exec(domain);
   if (matchRes && matchRes[2]) {
     return `${matchRes[1] ?? 'https://'}${matchRes[2]}`;
