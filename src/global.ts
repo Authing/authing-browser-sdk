@@ -11,18 +11,71 @@ export interface AccessToken {
 }
 
 export interface AuthingSPAInitOptions {
-  domain: string; // 必须填用户池域名！
+  /**
+   * 认证域名
+   *
+   * 如果应用未开启单点登录，使用应用域名；如果应用开启了单点登录，使用用户池域名
+   */
+  domain: string; // TODO: 认证模型调整后统一使用用户池域名
+
+  /**
+   * 应用 ID
+   */
   appId: string;
-  // redirectUri: string;
+
+  /**
+   * 登录回调地址，如果为 null，必须在 loginWithRedirect 中指定
+   */
+  redirectUri: string | null;
+
+  /**
+   * 应用侧向 Authing 请求的权限，以空格分隔，默认为 'openid profile'
+   *
+   * 成功获取的权限会出现在 Access Token 的 scope 字段中
+   *
+   * 一些示例：
+   * - openid: OIDC 标准规定的权限，必须包含
+   * - profile: 获取用户的基本身份信息
+   * - offline_access: 获取用户的 Refresh Token，可用于调用 refreshLoginState 刷新用户的登录态
+   */
   scope?: string;
+
+  /**
+   * 在回调端点处，是否重定向回最初发起登录的 URL
+   */
   redirectToOriginalUri?: boolean;
-  // idpPublicKey?: string;
+
+  /**
+   * 回调时在何处携带身份凭据，默认为 fragment
+   *
+   * - fragment: 在 URL hash 中携带
+   * - query: 在查询参数中携带
+   */
   redirectResponseMode?: RedirectResponseMode;
+
+  /**
+   * 是否使用 OIDC implicit 模式替代默认的 PKCE 模式
+   *
+   * 由于 implicit 模式安全性较低，不推荐使用，只用于兼容不支持 crypto 的浏览器
+   */
   useImplicitMode?: boolean;
+
+  /**
+   * implicit 模式返回的凭据种类，默认为 'token id_token'
+   *
+   * - token: 返回 Access Token
+   * - id_token: 返回 ID Token
+   */
   implicitResponseType?: ImplicitResponseType;
-  // transactionStorageProvider?: StorageProvider<LoginTransaction>;
-  // loginStateStorageProvider?: StorageProvider<LoginState>;
+
+  /**
+   * 弹出窗口的宽度
+   */
   popupWidth?: number;
+
+  /**
+   * 弹出窗口的高度
+   */
   popupHeight?: number;
 }
 
