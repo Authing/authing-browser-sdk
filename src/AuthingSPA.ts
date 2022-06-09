@@ -137,9 +137,10 @@ export class AuthingSPA {
     const state = createRandomString(16);
     const nonce = createRandomString(16);
     let codeVerifier: string | undefined;
+    const redirectUrl = this.options.redirectUri ?? window.location.origin;
 
     const params: AuthzURLParams = {
-      redirect_uri: window.location.href,
+      redirect_uri: redirectUrl,
       response_mode: 'web_message',
       response_type: this.options.useImplicitMode
         ? this.options.implicitResponseType
@@ -204,18 +205,13 @@ export class AuthingSPA {
       throw new Error('state 验证失败');
     }
 
-    return this.handleOIDCWebMsgResponse(
-      res,
-      nonce,
-      window.location.href,
-      codeVerifier,
-    );
+    return this.handleOIDCWebMsgResponse(res, nonce, redirectUrl, codeVerifier);
   }
 
   /**
    * 将用户重定向到 Authing 认证端点进行登录，需要配合 handleRedirectCallback 使用
    *
-   * @param options.redirectUri 接受登录结果的 URL，默认为当前 URL
+   * @param options.redirectUri 回调地址，默认为初始化参数中的 redirectUri
    * @param options.originalUri 发起登录的 URL，若设置了 redirectToOriginalUri 会在登录结束后重定向回到此页面，默认为当前 URL
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    * @param options.customState 自定义的中间状态，会被传递到回调端点
@@ -228,10 +224,14 @@ export class AuthingSPA {
       customState?: any;
     } = {},
   ): Promise<void> {
+    const redirectUri = options.redirectUri || this.options.redirectUri;
+    if (!redirectUri) {
+      throw new Error('必须设置 redirect_uri');
+    }
+
     const state = createRandomString(16);
     const nonce = createRandomString(16);
 
-    const redirectUri = options.redirectUri || window.location.href;
     const params: AuthzURLParams = {
       redirect_uri: redirectUri,
       response_mode: this.options.redirectResponseMode,
@@ -384,11 +384,15 @@ export class AuthingSPA {
   /**
    * 弹出一个新的 Authing 登录页面窗口，在其中完成登录
    *
+   * @param options.redirectUri 回调地址，需要和当前页面在 same origin 下；默认为初始化参数中的 redirectUri 或 window.location.origin
    * @param options.forced 即使在用户已登录时也提示用户再次登录
    */
   async loginWithPopup(
-    options: { forced?: boolean } = {},
+    options: { redirectUri?: string; forced?: boolean } = {},
   ): Promise<LoginState | null> {
+    const redirectUri =
+      options.redirectUri || this.options.redirectUri || window.location.origin;
+
     if (this.globalMsgListener !== undefined) {
       throw new Error(MSG_PENDING_AUTHZ);
     }
@@ -403,7 +407,7 @@ export class AuthingSPA {
     const nonce = createRandomString(16);
 
     const params: AuthzURLParams = {
-      redirect_uri: window.location.href,
+      redirect_uri: redirectUri,
       response_mode: 'web_message',
       response_type: this.options.useImplicitMode
         ? this.options.implicitResponseType
@@ -465,23 +469,18 @@ export class AuthingSPA {
       throw new Error('state 验证失败');
     }
 
-    return this.handleOIDCWebMsgResponse(
-      res,
-      nonce,
-      window.location.href,
-      codeVerifier,
-    );
+    return this.handleOIDCWebMsgResponse(res, nonce, redirectUri, codeVerifier);
   }
 
-  /**
-   * 由于 iframe 存在跨域 cookie 无法携带以及联邦认证支持问题，暂时不支持本方法
-   *
-   * 在指定的 iframe 中显示 Authing 登录页面，在其中完成登录
-   *
-   * 注意: 当需要手动关闭 iframe 时，必须同时调用 abortIframeLogin 方法
-   *
-   * @param options.forced 即使在用户已登录时也提示用户再次登录
-   */
+  // /**
+  //  * 由于 iframe 存在跨域 cookie 无法携带以及联邦认证支持问题，暂时不支持本方法
+  //  *
+  //  * 在指定的 iframe 中显示 Authing 登录页面，在其中完成登录
+  //  *
+  //  * 注意: 当需要手动关闭 iframe 时，必须同时调用 abortIframeLogin 方法
+  //  *
+  //  * @param options.forced 即使在用户已登录时也提示用户再次登录
+  //  */
   /*
   async loginWithIframe(
     iframe: HTMLIFrameElement,
@@ -582,7 +581,7 @@ export class AuthingSPA {
   /**
    * 重定向到 Authing 的登出端点，完成登出操作
    *
-   * @param options.redirectUri 登出完成后的回调地址，若为 null 则不进行回调
+   * @param options.redirectUri 登出完成后的回调地址，默认为初始化参数中的 logoutRedirectUri
    * @param options.state 自定义中间状态
    */
   async logoutWithRedirect(
@@ -590,19 +589,20 @@ export class AuthingSPA {
       redirectUri?: string | null;
       state?: string;
     } = {},
-  ): Promise<boolean> {
+  ): Promise<void> {
     const loginState = await this.getLoginState({ ignoreCache: true });
     if (!loginState) {
-      return false;
+      return;
     }
 
     const params: LogoutURLParams = {
       id_token_hint: loginState.idToken,
     };
 
-    if (options.redirectUri !== null) {
-      params.post_logout_redirect_uri =
-        options.redirectUri ?? window.location.href;
+    const logoutRedirectUri =
+      options.redirectUri ?? this.options.logoutRedirectUri;
+    if (logoutRedirectUri) {
+      params.post_logout_redirect_uri = logoutRedirectUri;
       params.state = options.state;
     }
 
@@ -611,7 +611,7 @@ export class AuthingSPA {
     window.location.replace(
       `${this.domain}/oidc/session/end?${createQueryParams(params)}`,
     );
-    return true;
+    return;
   }
 
   private async listenToPostMessage(state: string) {

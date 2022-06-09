@@ -24,9 +24,18 @@ export interface AuthingSPAInitOptions {
   appId: string;
 
   /**
-   * 登录回调地址，如果为 null，必须在 loginWithRedirect 中指定
+   * 登录回调地址，需要在控制台『应用配置 - 登录回调 URL』中指定
+   *
+   * 如果为 null，必须在 loginWithRedirect 中指定
    */
   redirectUri: string | null;
+
+  /**
+   * 登出回调地址，需要在控制台『应用配置 - 登出回调 URL』中指定
+   *
+   * 如果为空，登出流程会在 Authing 中止，不会进行后续的回调
+   */
+  logoutRedirectUri?: string;
 
   /**
    * 应用侧向 Authing 请求的权限，以空格分隔，默认为 'openid profile'
