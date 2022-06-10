@@ -78,6 +78,13 @@ export interface AuthingSPAInitOptions {
   implicitResponseType?: ImplicitResponseType;
 
   /**
+   * 本地缓存中登录态过期时间，单位为秒，默认和 Access Token 或 ID Token 过期时间相同
+   *
+   * 登录态过期后会从 Authing 重新获取，可用于单点登出场景
+   */
+  loginStateExpireTime?: number;
+
+  /**
    * 弹出窗口的宽度
    */
   popupWidth?: number;
@@ -121,6 +128,7 @@ export interface AuthzURLParams {
   prompt?: string;
   code_challenge?: string;
   code_challenge_method?: 'S256';
+  id_token_hint?: string;
 }
 
 export interface LogoutURLParams {

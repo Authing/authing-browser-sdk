@@ -58,22 +58,13 @@ export class AuthingSPA {
       );
     }
 
-    // if (options.loginStateStorageProvider) {
-    //   this.loginStateProvider = options.loginStateStorageProvider;
-    // } else
     if (typeof localStorage === 'object') {
       this.loginStateProvider = new LocalStorageProvider();
     } else {
-      // console.warn(
-      //   '您的浏览器版本过低，登录态存储功能将不可用，请实现自定义 loginStateStorageProvider',
-      // );
       console.warn('您的浏览器版本过低，登录态存储功能将不可用');
       this.loginStateProvider = new InMemoryStorageProvider();
     }
 
-    // if (options.transactionStorageProvider) {
-    //   this.transactionProvider = options.transactionStorageProvider;
-    // } else
     if (typeof sessionStorage === 'object') {
       this.transactionProvider = new SessionStorageProvider();
     } else {
@@ -81,9 +72,6 @@ export class AuthingSPA {
         console.warn(
           '您的浏览器版本过低，PKCE 重定向认证功能将不可用，请设置 useImplicitMode 为 true',
         );
-        // console.warn(
-        //   '您的浏览器版本过低，PKCE 重定向认证功能将不可用，请实现自定义 transactionStorageProvider 或设置 useImplicitMode 为 true',
-        // );
       }
       this.transactionProvider = new NullStorageProvider();
     }
@@ -102,21 +90,30 @@ export class AuthingSPA {
    * 1. 本地缓存获取
    * 2. 隐藏 iframe 获取
    *
-   * @param options.ignoreCache 忽略本地缓存，强制用 iframe 获取
+   * @param options.ignoreCache 忽略本地缓存
+   * @param options.skipExpireCheck 不检查过期时间
    */
   async getLoginState(
     options: {
       ignoreCache?: boolean;
+      skipExpireCheck?: boolean;
     } = {},
   ): Promise<null | LoginState> {
+    let oldLoginState: LoginState | null = null;
+
     // 1. 从 loginStateProvider 中（默认为 localStorage）获取
     if (!options.ignoreCache) {
       const state = await this.loginStateProvider.get(
         loginStateKey(this.options.appId),
       );
-      if (state && state.expireAt && state.expireAt > Date.now()) {
+      if (
+        state &&
+        (options.skipExpireCheck ||
+          (state.expireAt && state.expireAt > Date.now()))
+      ) {
         return state;
       }
+      oldLoginState = state;
     }
 
     // 清掉旧的登录态
@@ -150,6 +147,7 @@ export class AuthingSPA {
       nonce,
       prompt: 'none',
       scope: this.options.scope,
+      ...(oldLoginState?.idToken && { id_token_hint: oldLoginState.idToken }),
     };
 
     if (!this.options.useImplicitMode) {
@@ -590,7 +588,7 @@ export class AuthingSPA {
       state?: string;
     } = {},
   ): Promise<void> {
-    const loginState = await this.getLoginState({ ignoreCache: true });
+    const loginState = await this.getLoginState({ skipExpireCheck: true });
     if (!loginState) {
       return;
     }
@@ -668,7 +666,9 @@ export class AuthingSPA {
     if (idToken) {
       const parsedIdToken: IDToken = parseToken(idToken).body;
       loginState.parsedIdToken = parsedIdToken;
-      loginState.expireAt = parsedIdToken.exp * 1000;
+      loginState.expireAt = this.options.loginStateExpireTime
+        ? Date.now() + this.options.loginStateExpireTime * 1000
+        : parsedIdToken.exp * 1000;
 
       if (params.nonce && parsedIdToken.nonce !== params.nonce) {
         throw new Error('nonce 验证失败');
@@ -678,7 +678,9 @@ export class AuthingSPA {
     if (accessToken) {
       const parsedAccessToken: AccessToken = parseToken(accessToken).body;
       loginState.parsedAccessToken = parsedAccessToken;
-      loginState.expireAt = parsedAccessToken.exp * 1000;
+      loginState.expireAt = this.options.loginStateExpireTime
+        ? Date.now() + this.options.loginStateExpireTime * 1000
+        : parsedAccessToken.exp * 1000;
     }
 
     await this.loginStateProvider.put(
