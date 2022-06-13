@@ -91,12 +91,10 @@ export class AuthingSPA {
    * 2. 隐藏 iframe 获取
    *
    * @param options.ignoreCache 忽略本地缓存
-   * @param options.skipExpireCheck 不检查过期时间
    */
   async getLoginState(
     options: {
       ignoreCache?: boolean;
-      skipExpireCheck?: boolean;
     } = {},
   ): Promise<null | LoginState> {
     let oldLoginState: LoginState | null = null;
@@ -106,11 +104,7 @@ export class AuthingSPA {
       const state = await this.loginStateProvider.get(
         loginStateKey(this.options.appId),
       );
-      if (
-        state &&
-        (options.skipExpireCheck ||
-          (state.expireAt && state.expireAt > Date.now()))
-      ) {
+      if (state && state.expireAt && state.expireAt > Date.now()) {
         return state;
       }
       oldLoginState = state;
@@ -588,10 +582,13 @@ export class AuthingSPA {
       state?: string;
     } = {},
   ): Promise<void> {
-    const loginState = await this.getLoginState({ skipExpireCheck: true });
+    const loginState = await this.loginStateProvider.get(
+      loginStateKey(this.options.appId),
+    );
     if (!loginState) {
       return;
     }
+    await this.loginStateProvider.delete(loginStateKey(this.options.appId));
 
     const params: LogoutURLParams = {
       id_token_hint: loginState.idToken,
