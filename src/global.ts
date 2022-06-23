@@ -78,11 +78,11 @@ export interface AuthingSPAInitOptions {
   implicitResponseType?: ImplicitResponseType;
 
   /**
-   * 本地缓存中登录态过期时间，单位为秒，默认和 Access Token 或 ID Token 过期时间相同
+   * 是否在每次获取登录态时请求 Authing 检查 Access Token 有效性，可用于单点登出场景，默认为 false
    *
-   * 登录态过期后会从 Authing 重新获取，可用于单点登出场景
+   * 如果设为 true，需要在控制台中将『应用配置』-『其他配置』-『检验 token 身份验证方式』设为 none
    */
-  loginStateExpireTime?: number;
+  introspectAccessToken?: boolean;
 
   /**
    * 弹出窗口的宽度

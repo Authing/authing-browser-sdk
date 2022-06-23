@@ -97,17 +97,33 @@ export class AuthingSPA {
       ignoreCache?: boolean;
     } = {},
   ): Promise<null | LoginState> {
-    let oldLoginState: LoginState | null = null;
-
     // 1. 从 loginStateProvider 中（默认为 localStorage）获取
     if (!options.ignoreCache) {
       const state = await this.loginStateProvider.get(
         loginStateKey(this.options.appId),
       );
       if (state && state.expireAt && state.expireAt > Date.now()) {
-        return state;
+        if (!this.options.introspectAccessToken || !state.accessToken) {
+          return state;
+        }
+
+        const { data } = await axiosPost(
+          `${this.domain}/oidc/token/introspection`,
+          createQueryParams({
+            client_id: this.options.appId,
+            token: state.accessToken,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          },
+        );
+
+        if (data.active === true) {
+          return state;
+        }
       }
-      oldLoginState = state;
     }
 
     // 清掉旧的登录态
@@ -141,7 +157,6 @@ export class AuthingSPA {
       nonce,
       prompt: 'none',
       scope: this.options.scope,
-      ...(oldLoginState?.idToken && { id_token_hint: oldLoginState.idToken }),
     };
 
     if (!this.options.useImplicitMode) {
@@ -663,9 +678,7 @@ export class AuthingSPA {
     if (idToken) {
       const parsedIdToken: IDToken = parseToken(idToken).body;
       loginState.parsedIdToken = parsedIdToken;
-      loginState.expireAt = this.options.loginStateExpireTime
-        ? Date.now() + this.options.loginStateExpireTime * 1000
-        : parsedIdToken.exp * 1000;
+      loginState.expireAt = parsedIdToken.exp * 1000;
 
       if (params.nonce && parsedIdToken.nonce !== params.nonce) {
         throw new Error('nonce 验证失败');
@@ -675,9 +688,7 @@ export class AuthingSPA {
     if (accessToken) {
       const parsedAccessToken: AccessToken = parseToken(accessToken).body;
       loginState.parsedAccessToken = parsedAccessToken;
-      loginState.expireAt = this.options.loginStateExpireTime
-        ? Date.now() + this.options.loginStateExpireTime * 1000
-        : parsedAccessToken.exp * 1000;
+      loginState.expireAt = parsedAccessToken.exp * 1000;
     }
 
     await this.loginStateProvider.put(
