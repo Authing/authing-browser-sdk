@@ -77,7 +77,7 @@ export class AuthingSPA {
     }
 
     options.implicitResponseType =
-      options.implicitResponseType ?? 'token id_token';
+      options.implicitResponseType ?? 'id_token token';
     options.redirectResponseMode = options.redirectResponseMode ?? 'fragment';
     options.popupWidth = options.popupWidth ?? DEFAULT_POPUP_WIDTH;
     options.popupHeight = options.popupHeight ?? DEFAULT_POPUP_HEIGHT;
@@ -344,7 +344,7 @@ export class AuthingSPA {
       }
     } else if (!this.options.useImplicitMode) {
       throw new Error(
-        '获取登录流程会话失败, 请确认浏览器是否支持 sessionStorage, 或检查自定义 transactionProvider 实现',
+        '获取登录流程会话失败, 请确认是否重复访问了回调端点，以及浏览器是否支持 sessionStorage',
       );
     }
 
