@@ -12,7 +12,6 @@
   "dependencies": {
     "axios": "^0.26.1"
   },
-  "private": true,
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.1",
     "@rollup/plugin-json": "^4.1.0",
