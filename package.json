@@ -1,5 +1,5 @@
 {
-  "name": "authing-spa-auth-sdk",
+  "name": "@authing/spa-auth-sdk",
   "version": "0.0.1-alpha1",
   "description": "Official SDK of Authing for Single Page Apps",
   "main": "dist/index.umd.js",
