@@ -1,1 +1,1 @@
-export { AuthingSPA } from './AuthingSPA';
+export { Authing } from './Authing';

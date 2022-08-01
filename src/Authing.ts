@@ -40,7 +40,7 @@ import {
   transactionKey,
 } from './utils';
 
-export class AuthingSPA {
+export class Authing {
   private globalMsgListener: MsgListener | null | undefined;
 
   private readonly options: Required<AuthingSPAInitOptions>;
