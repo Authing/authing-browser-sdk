@@ -6,7 +6,6 @@
   "module": "dist/index.esm.js",
   "types": "dist/types/index.d.ts",
   "scripts": {
-    "build:tsc": "tsc",
     "build": "rm -rf ./dist && rollup -c"
   },
   "dependencies": {
