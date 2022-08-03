@@ -4,10 +4,12 @@
   <img width="250" src="https://files.authing.co/authing-console/authing-logo-new-20210924.svg" />
 </div>
 
-<a href="https://badge.fury.io/js/@authing%2Fbrowser" target="_blank"><img src="https://badge.fury.io/js/@authing%2Fbrowser.svg" alt="npm version"></a>
-<a href="https://npmcharts.com/compare/@authing/browser" target="_blank"><img src="https://img.shields.io/npm/dm/@authing/browser" alt="download"></a>
-<a href="https://forum.authing.cn/" target="_blank"><img src="https://img.shields.io/badge/chat-forum-blue" /></a>
-<a href="https://opensource.org/licenses/MIT" target="_blank"><img src="https://img.shields.io/badge/License-MIT-success" alt="License"></a>
+<div align=center>
+  <a href="https://badge.fury.io/js/@authing%2Fbrowser" target="_blank"><img src="https://badge.fury.io/js/@authing%2Fbrowser.svg" alt="npm version"></a>
+  <a href="https://npmcharts.com/compare/@authing/browser" target="_blank"><img src="https://img.shields.io/npm/dm/@authing/browser" alt="download"></a>
+  <a href="https://forum.authing.cn/" target="_blank"><img src="https://img.shields.io/badge/chat-forum-blue" /></a>
+  <a href="https://opensource.org/licenses/MIT" target="_blank"><img src="https://img.shields.io/badge/License-MIT-success" alt="License"></a>
+</div>
 
 **English** | [简体中文](./README.zh-CN.md)
 
@@ -17,9 +19,9 @@ You can use the Authing Browser SDK to quickly integrate authentication capabili
 
 ## Documentation
 
-- [React quickly integrates Authing](https://docs.authing.cn/v2/en/quickstarts/spa/react.html)
-- [Vue quickly integrates Authing](https://docs.authing.cn/v2/en/quickstarts/spa/vue.html)
-- [Angular quickly integrates Authing](https://docs.authing.cn/v2/en/quickstarts/spa/angular.html)
+- [React quickly integrates Authing](https://docs.authing.cn/v2/quickstarts/spa/react.html)
+- [Vue quickly integrates Authing](https://docs.authing.cn/v2/quickstarts/spa/vue.html)
+- [Angular quickly integrates Authing](https://docs.authing.cn/v2/quickstarts/spa/angular.html)
 - [Single Sign-On (SSO)](https://docs.authing.cn/v2/en/reference/sdk-for-sso-spa.html)
 
 
@@ -54,17 +56,6 @@ $ yarn add @authing/browser
   });
 </script>
 ```
-
-
-## Demo
-
-- [React Quick Integration Authing Demo](https://github.com/Authing/spa-demo-react)
-- [Vue Quick Integration Authing Demo](https://github.com/Authing/spa-demo-vue)
-- [Angular Quick Integration Authing Demo](https://github.com/Authing/spa-demo-angular)
-- [authing-sso-demo-react](https://github.com/Authing/authing-sso-demo/tree/feat-sso-v3-demo)
-- [authing-sso-demo-vue2](https://github.com/Authing/authing-sso-demo/tree/feat-sso-v3-demo-vue2)
-- [authing-sso-demo-vue3](https://github.com/Authing/authing-sso-demo/tree/feat-sso-v3-demo-vue3)
-- [authing-sso-demo-angular](https://github.com/Authing/authing-sso-demo/tree/feat-sso-v3-demo-angular)
 
 
 ## Contribution
