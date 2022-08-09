@@ -80,7 +80,7 @@ export function domainC14n(domain: string) {
 }
 
 export function parseToken(token: string) {
-  const [header, body, sig] = token.split('.');
+  let [header, body, sig] = token.split('.');
   if (!sig) {
     throw new Error('无效的 Token 格式');
   }
@@ -92,9 +92,14 @@ export function parseToken(token: string) {
     );
   }
 
+  body = body.replace(/-/g, '+').replace(/_/g, '/');
+  body = decodeURIComponent(window.atob(body).split('').map(function(c) {
+    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+
   return {
     header: headerObj,
-    body: JSON.parse(window.atob(body)),
+    body: JSON.parse(body),
   };
 }
 
