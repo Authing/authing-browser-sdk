@@ -9,9 +9,6 @@ on:
       email:
         description: 'Please enter your github email'
         required: true
-      version:
-        description: 'Please enter your release version'
-        required: true
         
 jobs:
 
@@ -21,7 +18,6 @@ jobs:
 
     env: 
       PUBLISH_OPTS: ${{ github.ref_name == 'master' && '--verbose' || '--verbose --tag=alpha' }}
-      VERSION: ${{ github.event.inputs.version }}
       NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
     steps:
@@ -35,7 +31,6 @@ jobs:
       - name: before scripts
         run: |
           echo "Current branch: ${{ github.ref_name }}"
-          echo "Current publish version: ${{ github.event.inputs.version }}"
           echo "Current user.name: ${{ github.event.inputs.name }}"
           echo "Current user.email: ${{ github.event.inputs.email }}"
       
