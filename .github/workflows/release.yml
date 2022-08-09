@@ -46,11 +46,11 @@ jobs:
           
       - name: install packages
         run: |
-          npm install yarn -g
+          npm ci
 
       - name: build
         run: |
-          yarn build
+          npm run build
           
       - name: release
         run: |
