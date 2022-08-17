@@ -92,6 +92,7 @@ export default {
     async getLoginState() {
       const state = await this.sdk.getLoginState();
       this.loginState = state;
+      console.log('this.loginState: ', this.loginState)
     },
     /**
      * 用 Access Token 获取用户身份信息
@@ -105,6 +106,7 @@ export default {
         accessToken: this.loginState.accessToken,
       });
       this.userInfo = userInfo;
+      console.log('this.userInfo: ', this.userInfo)
     },
     /**
      * 登出
